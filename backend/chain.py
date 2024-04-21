@@ -2,11 +2,13 @@ import os
 from operator import itemgetter
 from typing import Dict, List, Optional, Sequence
 
+import chromadb
+from chromadb.config import Settings
+
 import weaviate
-from constants import WEAVIATE_DOCS_INDEX_NAME
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from ingest import get_openai_embeddings
+
 from langchain_anthropic import ChatAnthropic
 from langchain_community.chat_models import ChatCohere
 from langchain_community.vectorstores import Weaviate
@@ -33,11 +35,16 @@ from langchain_core.runnables import (
 from langchain_fireworks import ChatFireworks
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
+from langchain.vectorstores import Chroma
 from langsmith import Client
 
+from constants import WEAVIATE_DOCS_INDEX_NAME
+from ingest import get_openai_embeddings
+
 RESPONSE_TEMPLATE = """\
-You are an expert programmer and problem-solver, tasked with answering any question \
-about Langchain.
+You are working for an IT consultant company in Sweden called Devies. \
+You have a leading role as the company spokeperson with a focus on public relation and \
+your responsibility is to answer any question about Devies.
 
 Generate a comprehensive and informative answer of 80 words or less for the \
 given question based solely on the provided search results (URL and content). You must \
@@ -69,8 +76,9 @@ user.\
 """
 
 COHERE_RESPONSE_TEMPLATE = """\
-You are an expert programmer and problem-solver, tasked with answering any question \
-about Langchain.
+You are working for an IT consultant company in Sweden called Devies. \
+Your role at Devies as experienced human resource officer is to answer any question from fellow colleagues, \
+that can help their work and daily activities at the company.
 
 Generate a comprehensive and informative answer of 80 words or less for the \
 given question based solely on the provided search results (URL and content). You must \
@@ -117,8 +125,8 @@ app.add_middleware(
 )
 
 
-WEAVIATE_URL = os.environ["WEAVIATE_URL"]
-WEAVIATE_API_KEY = os.environ["WEAVIATE_API_KEY"]
+PERSIST_DIRECTORY = os.environ["PERSIST_DIRECTORY"]
+TARGET_SOURCE_CHUNKS = os.environ["TARGET_SOURCE_CHUNKS"]
 
 
 class ChatRequest(BaseModel):
@@ -126,7 +134,10 @@ class ChatRequest(BaseModel):
     chat_history: Optional[List[Dict[str, str]]]
 
 
-def get_retriever() -> BaseRetriever:
+def get_retriever_weaviate() -> BaseRetriever:
+    WEAVIATE_URL = os.environ["WEAVIATE_URL"]
+    WEAVIATE_API_KEY = os.environ["WEAVIATE_API_KEY"]
+
     weaviate_client = weaviate.Client(
         url=WEAVIATE_URL,
         auth_client_secret=weaviate.AuthApiKey(api_key=WEAVIATE_API_KEY),
@@ -140,6 +151,26 @@ def get_retriever() -> BaseRetriever:
         attributes=["source", "title"],
     )
     return weaviate_client.as_retriever(search_kwargs=dict(k=6))
+
+def get_retriever() -> BaseRetriever:
+    embeddings = get_openai_embeddings()
+    print('embeddings obtained...')
+
+    chroma_client = chromadb.PersistentClient(path=PERSIST_DIRECTORY)
+
+    CHROMA_SETTINGS = Settings(
+        persist_directory=PERSIST_DIRECTORY,
+        anonymized_telemetry=False
+    )
+
+    db = Chroma(persist_directory=PERSIST_DIRECTORY,
+                client_settings=CHROMA_SETTINGS,
+                embedding_function=embeddings,
+                client=chroma_client)
+    print('chromadb client obtained...')
+    retriever = db.as_retriever(search_kwargs={"k": TARGET_SOURCE_CHUNKS})
+    print('vector store retriever obtained...')
+    return retriever
 
 
 def create_retriever_chain(

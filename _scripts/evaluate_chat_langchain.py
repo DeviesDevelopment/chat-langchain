@@ -7,7 +7,7 @@ from langchain.smith import RunEvalConfig
 from langsmith import Client
 
 # Ugly. Requires PYTHONATH=$(PWD) to run
-from backend.chain import create_chain, get_retriever
+from backend.chain import create_chain, get_retriever_weaviate
 
 _PROVIDER_MAP = {
     "openai": ChatOpenAI,
@@ -28,7 +28,7 @@ if __name__ == "__main__":
     client = Client()
     # Check dataset exists
     ds = client.read_dataset(dataset_name=args.dataset_name)
-    retriever = get_retriever()
+    retriever = get_retriever_weaviate()
     llm = _PROVIDER_MAP[args.model_provider](
         model=_MODEL_MAP[args.model_provider], temperature=0
     )
