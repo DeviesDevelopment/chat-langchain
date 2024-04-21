@@ -26,6 +26,8 @@ voyageai = "^0.1.4"
 pillow = "^10.2.0"
 tiktoken = "^0.5.2"
 cohere = "4.45"
+python-dotenv = "^1.0.1"
+chromadb = "^0.4.24"
 
 
 [tool.poetry.group.lint.dependencies]

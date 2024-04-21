@@ -6,7 +6,7 @@ import weaviate
 from constants import WEAVIATE_DOCS_INDEX_NAME
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from ingest import get_embeddings_model
+from ingest import get_openai_embeddings
 from langchain_anthropic import ChatAnthropic
 from langchain_community.chat_models import ChatCohere
 from langchain_community.vectorstores import Weaviate
@@ -135,7 +135,7 @@ def get_retriever() -> BaseRetriever:
         client=weaviate_client,
         index_name=WEAVIATE_DOCS_INDEX_NAME,
         text_key="text",
-        embedding=get_embeddings_model(),
+        embedding=get_openai_embeddings(),
         by_text=False,
         attributes=["source", "title"],
     )
