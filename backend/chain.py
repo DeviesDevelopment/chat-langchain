@@ -168,7 +168,7 @@ def get_retriever() -> BaseRetriever:
                 embedding_function=embeddings,
                 client=chroma_client)
     print('chromadb client obtained...')
-    retriever = db.as_retriever(search_kwargs={"k": TARGET_SOURCE_CHUNKS})
+    retriever = db.as_retriever()
     print('vector store retriever obtained...')
     return retriever
 
