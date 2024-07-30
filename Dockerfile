@@ -1,4 +1,6 @@
-FROM python:3.12
+FROM python:3.12.3
+
+WORKDIR /app
 
 RUN pip install poetry==1.8.2
 
@@ -10,7 +12,9 @@ RUN poetry install --no-interaction --no-ansi --no-root --no-directory
 
 COPY ./backend/*.py ./backend/
 
-RUN poetry install  --no-interaction --no-ansi
+RUN poetry install --no-interaction --no-ansi
+
+COPY .env .env
 
 # env variables
 ENV OPENAI_API_KEY=""
