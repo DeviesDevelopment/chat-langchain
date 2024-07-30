@@ -35,7 +35,7 @@ from langchain_core.runnables import (
 from langchain_fireworks import ChatFireworks
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
-from langchain.vectorstores import Chroma
+from langchain_community.vectorstores import Chroma
 from langsmith import Client
 
 from constants import WEAVIATE_DOCS_INDEX_NAME

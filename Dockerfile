@@ -16,7 +16,7 @@ RUN poetry install  --no-interaction --no-ansi
 ENV OPENAI_API_KEY=""
 ENV TARGET_SOURCE_CHUNKS=4
 ENV LOAD_WEB_URL="https://www.devies.se/"
-ENV LOAD_DIR_PATH="../docs/"
+ENV LOAD_DIR_PATH=""
 ENV PERSIST_DIRECTORY="db"
 
 CMD exec uvicorn --app-dir=backend main:app --host 0.0.0.0 --port 8080
