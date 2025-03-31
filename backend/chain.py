@@ -34,7 +34,6 @@ from langchain_core.runnables import (
 from langchain_fireworks import ChatFireworks
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
-from langsmith import Client
 
 
 RESPONSE_TEMPLATE = """\
@@ -100,7 +99,6 @@ Standalone Question:"""
 
 load_dotenv()
 
-client = Client()
 
 app = FastAPI()
 app.add_middleware(
@@ -113,10 +111,6 @@ app.add_middleware(
 )
 
 
-WEAVIATE_URL = os.environ["WEAVIATE_URL"]
-WEAVIATE_API_KEY = os.environ["WEAVIATE_API_KEY"]
-
-
 class ChatRequest(BaseModel):
     question: str
     chat_history: Optional[List[Dict[str, str]]]
@@ -125,10 +119,10 @@ class ChatRequest(BaseModel):
 def get_retriever() -> BaseRetriever:
     FAISS_DB_PATH = os.environ["FAISS_DB_PATH"]
 
-    vector_store = FAISS.load_local(FAISS_DB_PATH, embedding=get_embeddings_model())
+    vector_store = FAISS.load_local(FAISS_DB_PATH, get_embeddings_model(), allow_dangerous_deserialization=True)
     # results = vector_store.similarity_search("What is this website about?", k=3)
 
-    return vector_store.as_retriever(search_kwargs=dict(k=6))
+    return vector_store.as_retriever(search_type="mmr", search_kwargs=dict(k=6))
 
 
 def create_retriever_chain(
@@ -210,7 +204,7 @@ def create_chain(llm: LanguageModelLike, retriever: BaseRetriever) -> Runnable:
     response_synthesizer = (
         default_response_synthesizer.configurable_alternatives(
             ConfigurableField("llm"),
-            default_key="gpt-4o",
+            default_key="gpt_4o",
             anthropic_claude_3_haiku=default_response_synthesizer,
             fireworks_mixtral=default_response_synthesizer,
             google_gemini_pro=default_response_synthesizer,
@@ -254,7 +248,7 @@ llm = gpt_4o.configurable_alternatives(
     # This gives this field an id
     # When configuring the end runnable, we can then use this id to configure this field
     ConfigurableField(id="llm"),
-    default_key="gpt-4o",
+    default_key="gpt_4o",
     anthropic_claude_3_haiku=claude_3_haiku,
     fireworks_mixtral=fireworks_mixtral,
     google_gemini_pro=gemini_pro,
