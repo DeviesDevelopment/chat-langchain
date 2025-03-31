@@ -16,7 +16,7 @@ langchain-anthropic = "^0.1.4"
 langchain-fireworks = "^0.1.1"
 langserve = {extras = ["server"], version = "^0.0.39"}
 fastapi = "^0.103.1"
-pydantic = "1.10"
+pydantic = "1.10.16"
 uvicorn = "^0.23.2"
 beautifulsoup4 = "^4.12.2"
 weaviate-client = "^3.23.2"
@@ -26,6 +26,8 @@ voyageai = "^0.1.4"
 pillow = "^10.2.0"
 tiktoken = "^0.5.2"
 cohere = "4.45"
+faiss-cpu = "^1.10.0"
+dotenv = "^0.9.9"
 
 
 [tool.poetry.group.lint.dependencies]

@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 from operator import itemgetter
 from typing import Dict, List, Optional, Sequence
 
@@ -9,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from ingest import get_embeddings_model
 from langchain_anthropic import ChatAnthropic
 from langchain_community.chat_models import ChatCohere
-from langchain_community.vectorstores import Weaviate
+from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_core.language_models import LanguageModelLike
 from langchain_core.messages import AIMessage, HumanMessage
@@ -35,63 +36,56 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 from langsmith import Client
 
-RESPONSE_TEMPLATE = """\
-You are an expert programmer and problem-solver, tasked with answering any question \
-about Langchain.
 
-Generate a comprehensive and informative answer of 80 words or less for the \
-given question based solely on the provided search results (URL and content). You must \
-only use information from the provided search results. Use an unbiased and \
-journalistic tone. Combine search results together into a coherent answer. Do not \
-repeat text. Cite search results using [${{number}}] notation. Only cite the most \
+RESPONSE_TEMPLATE = """\
+You are a human resource agent for a consultant company called Devies. Your task is to talk to clients and answer any questions about Devies.
+Generate a comprehensive and informative answer of 140 words or less for the given question. \
+You can give casual responses like a human resource agent to subjective questions or opinions \
+but any inquieries about Devies must be based solely on the provided search results (URL and content). \
+Combine search results together into a coherent answer. \
+Do not repeat text. Cite search results using [{{number}}] notation. Only cite the most \
 relevant results that answer the question accurately. Place these citations at the end \
-of the sentence or paragraph that reference them - do not put them all at the end. If \
-different results refer to different entities within the same name, write separate \
+of the sentence or paragraph that reference them - do not put them all at the end. \
+If different results refer to different entities within the same name, write separate \
 answers for each entity.
 
-You should use bullet points in your answer for readability. Put citations where they apply
+You should use bullet points in your answer for readability. Put citations where they apply \
 rather than putting them all at the end.
 
-If there is nothing in the context relevant to the question at hand, just say "Hmm, \
-I'm not sure." Don't try to make up an answer.
-
 Anything between the following `context`  html blocks is retrieved from a knowledge \
-bank, not part of the conversation with the user. 
+bank, not part of the conversation with the user.
 
 <context>
     {context} 
 <context/>
 
-REMEMBER: If there is no relevant information within the context, just say "Hmm, I'm \
-not sure." Don't try to make up an answer. Anything between the preceding 'context' \
-html blocks is retrieved from a knowledge bank, not part of the conversation with the \
-user.\
+REMEMBER: Anything between the preceding 'context' \
+html blocks is retrieved from a knowledge bank, not part of the conversation with the user.\
 """
 
 COHERE_RESPONSE_TEMPLATE = """\
-You are an expert programmer and problem-solver, tasked with answering any question \
-about Langchain.
-
-Generate a comprehensive and informative answer of 80 words or less for the \
-given question based solely on the provided search results (URL and content). You must \
-only use information from the provided search results. Use an unbiased and \
-journalistic tone. Combine search results together into a coherent answer. Do not \
-repeat text. Cite search results using [${{number}}] notation. Only cite the most \
+You are a human resource agent for a consultant company called Devies. Your task is to talk to clients and answer any questions about Devies.
+Generate a comprehensive and informative answer of 140 words or less for the given question. \
+You can give casual responses like a human resource agent to subjective questions or opinions \
+but any inquieries about Devies must be based solely on the provided search results (URL and content). \
+Combine search results together into a coherent answer. \
+Do not repeat text. Cite search results using [{{number}}] notation. Only cite the most \
 relevant results that answer the question accurately. Place these citations at the end \
-of the sentence or paragraph that reference them - do not put them all at the end. If \
-different results refer to different entities within the same name, write separate \
+of the sentence or paragraph that reference them - do not put them all at the end. \
+If different results refer to different entities within the same name, write separate \
 answers for each entity.
 
-You should use bullet points in your answer for readability. Put citations where they apply
+You should use bullet points in your answer for readability. Put citations where they apply \
 rather than putting them all at the end.
 
-If there is nothing in the context relevant to the question at hand, just say "Hmm, \
-I'm not sure." Don't try to make up an answer.
+Anything between the following `context`  html blocks is retrieved from a knowledge \
+bank, not part of the conversation with the user. 
+<context>
+    {context} 
+<context/>
 
-REMEMBER: If there is no relevant information within the context, just say "Hmm, I'm \
-not sure." Don't try to make up an answer. Anything between the preceding 'context' \
-html blocks is retrieved from a knowledge bank, not part of the conversation with the \
-user.\
+REMEMBER: Anything between the preceding 'context' \
+html blocks is retrieved from a knowledge bank, not part of the conversation with the user.\
 """
 
 REPHRASE_TEMPLATE = """\
@@ -103,6 +97,8 @@ Chat History:
 Follow Up Input: {question}
 Standalone Question:"""
 
+
+load_dotenv()
 
 client = Client()
 
@@ -127,19 +123,12 @@ class ChatRequest(BaseModel):
 
 
 def get_retriever() -> BaseRetriever:
-    weaviate_client = weaviate.Client(
-        url=WEAVIATE_URL,
-        auth_client_secret=weaviate.AuthApiKey(api_key=WEAVIATE_API_KEY),
-    )
-    weaviate_client = Weaviate(
-        client=weaviate_client,
-        index_name=WEAVIATE_DOCS_INDEX_NAME,
-        text_key="text",
-        embedding=get_embeddings_model(),
-        by_text=False,
-        attributes=["source", "title"],
-    )
-    return weaviate_client.as_retriever(search_kwargs=dict(k=6))
+    FAISS_DB_PATH = os.environ["FAISS_DB_PATH"]
+
+    vector_store = FAISS.load_local(FAISS_DB_PATH, embedding=get_embeddings_model())
+    # results = vector_store.similarity_search("What is this website about?", k=3)
+
+    return vector_store.as_retriever(search_kwargs=dict(k=6))
 
 
 def create_retriever_chain(
@@ -221,7 +210,7 @@ def create_chain(llm: LanguageModelLike, retriever: BaseRetriever) -> Runnable:
     response_synthesizer = (
         default_response_synthesizer.configurable_alternatives(
             ConfigurableField("llm"),
-            default_key="openai_gpt_3_5_turbo",
+            default_key="gpt-4o",
             anthropic_claude_3_haiku=default_response_synthesizer,
             fireworks_mixtral=default_response_synthesizer,
             google_gemini_pro=default_response_synthesizer,
@@ -236,7 +225,7 @@ def create_chain(llm: LanguageModelLike, retriever: BaseRetriever) -> Runnable:
     )
 
 
-gpt_3_5 = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0, streaming=True)
+gpt_4o = ChatOpenAI(model="gpt-4o", temperature=0, streaming=True)
 claude_3_haiku = ChatAnthropic(
     model="claude-3-haiku-20240307",
     temperature=0,
@@ -261,17 +250,17 @@ cohere_command = ChatCohere(
     temperature=0,
     cohere_api_key=os.environ.get("COHERE_API_KEY", "not_provided"),
 )
-llm = gpt_3_5.configurable_alternatives(
+llm = gpt_4o.configurable_alternatives(
     # This gives this field an id
     # When configuring the end runnable, we can then use this id to configure this field
     ConfigurableField(id="llm"),
-    default_key="openai_gpt_3_5_turbo",
+    default_key="gpt-4o",
     anthropic_claude_3_haiku=claude_3_haiku,
     fireworks_mixtral=fireworks_mixtral,
     google_gemini_pro=gemini_pro,
     cohere_command=cohere_command,
 ).with_fallbacks(
-    [gpt_3_5, claude_3_haiku, fireworks_mixtral, gemini_pro, cohere_command]
+    [gpt_4o, claude_3_haiku, fireworks_mixtral, gemini_pro, cohere_command]
 )
 
 retriever = get_retriever()
