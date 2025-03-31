@@ -153,3 +153,7 @@ node_modules/
 !.yarn/versions
 
 notebooks
+
+# databases
+*.sql
+db/
