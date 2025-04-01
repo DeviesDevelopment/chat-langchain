@@ -39,10 +39,10 @@ def metadata_extractor(meta: dict, soup: BeautifulSoup) -> dict:
     }
 
 
-def load_langchain_docs():
+def load_webpage_docs():
     return SitemapLoader(
-        "https://python.langchain.com/sitemap.xml",
-        filter_urls=["https://python.langchain.com/"],
+        "https://www.devies.se/sitemap.xml",
+        filter_urls=["https://www.devies.se/"],
         parsing_function=langchain_docs_extractor,
         default_parser="lxml",
         bs_kwargs={
@@ -54,57 +54,14 @@ def load_langchain_docs():
     ).load()
 
 
-def load_langsmith_docs():
-    return RecursiveUrlLoader(
-        url="https://docs.smith.langchain.com/",
-        max_depth=8,
-        extractor=simple_extractor,
-        prevent_outside=True,
-        use_async=True,
-        timeout=600,
-        # Drop trailing / to avoid duplicate pages.
-        link_regex=(
-            f"href=[\"']{PREFIXES_TO_IGNORE_REGEX}((?:{SUFFIXES_TO_IGNORE_REGEX}.)*?)"
-            r"(?:[\#'\"]|\/[\#'\"])"
-        ),
-        check_response_status=True,
-    ).load()
-
-
-def simple_extractor(html: str) -> str:
-    soup = BeautifulSoup(html, "lxml")
-    return re.sub(r"\n\n+", "\n\n", soup.text).strip()
-
-
-def load_api_docs():
-    return RecursiveUrlLoader(
-        url="https://api.python.langchain.com/en/latest/",
-        max_depth=8,
-        extractor=simple_extractor,
-        prevent_outside=True,
-        use_async=True,
-        timeout=600,
-        # Drop trailing / to avoid duplicate pages.
-        link_regex=(
-            f"href=[\"']{PREFIXES_TO_IGNORE_REGEX}((?:{SUFFIXES_TO_IGNORE_REGEX}.)*?)"
-            r"(?:[\#'\"]|\/[\#'\"])"
-        ),
-        check_response_status=True,
-        exclude_dirs=(
-            "https://api.python.langchain.com/en/latest/_sources",
-            "https://api.python.langchain.com/en/latest/_modules",
-        ),
-    ).load()
-
-
 def ingest_docs():
     FAISS_DB_PATH = os.environ["FAISS_DB_PATH"]
     
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=200)
     embedding = get_embeddings_model()
 
-    docs_from_api = load_api_docs()
-    logger.info(f"Loaded {len(docs_from_api)} docs from API")
+    docs_from_api = load_webpage_docs()
+    logger.info(f"Loaded {len(docs_from_api)} docs from sitemap")
     
     docs_transformed = text_splitter.split_documents(docs_from_api)
     docs_transformed = [doc for doc in docs_transformed if len(doc.page_content) > 10]
@@ -112,13 +69,6 @@ def ingest_docs():
     # create FAISS vector store
     vector_store = FAISS.from_documents(docs_transformed, embedding)
     vector_store.save_local(FAISS_DB_PATH)
-
-    record_manager = SQLRecordManager(
-        "faiss/documents", 
-        db_url="sqlite:///record_manager_cache.sql"
-    )
-
-    record_manager.create_schema()
 
     # We try to return 'source' and 'title' metadata when querying vector store and
     # Weaviate will error at query time if one of the attributes is missing from a
@@ -128,19 +78,6 @@ def ingest_docs():
             doc.metadata["source"] = ""
         if "title" not in doc.metadata:
             doc.metadata["title"] = ""
-
-    indexing_stats = index(
-        docs_transformed,
-        record_manager,
-        vector_store,
-        cleanup="full",
-        source_id_key="source",
-        force_update=(os.environ.get("FORCE_UPDATE") or "false").lower() == "true",
-    )
-
-    logger.info(f"Indexing stats: {indexing_stats}")
-    # num_vecs = client.query.aggregate(WEAVIATE_DOCS_INDEX_NAME).with_meta_count().do()
-    # logger.info(f"LangChain now has this many vectors: {num_vecs}")
 
 
 if __name__ == "__main__":
