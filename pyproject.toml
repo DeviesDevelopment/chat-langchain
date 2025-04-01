@@ -6,28 +6,29 @@ authors = ["SN <6432132+samnoyes@users.noreply.github.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
-langchain = "^0.1.12"
+python = "^3.11"
+langchain = ">=0.3.0,<0.4.0"
 langsmith =  "^0.1.25"
-langchain-community = ">=0.0.27,<0.1"
-langchain-openai = ">=0.0.8,<0.1"
-langchain-google-genai = ">=0.0.6,<0.1"
-langchain-anthropic = "^0.1.4"
-langchain-fireworks = "^0.1.1"
-langserve = {extras = ["server"], version = "^0.0.39"}
+langchain-google-genai = ">=2.0.0,<3.0.0"
+langchain-core = ">=0.3.10,<0.4.0"
+langchain-community = ">=0.3.0,<0.4.0"
+langchain-openai = ">=0.2.0,<0.3.0"
+langchain-anthropic = ">=0.2.0,<0.3.0"
+langchain-fireworks = ">=0.2.0,<0.3.0"
+langserve = {extras = ["server"], version = "^0.3.0"}
 fastapi = "^0.103.1"
-pydantic = "1.10.16"
+pydantic = ">=2.7.4,<3.0.0"
 uvicorn = "^0.23.2"
 beautifulsoup4 = "^4.12.2"
-weaviate-client = "^3.23.2"
 psycopg2 = "^2.9.7"
 lxml = "^4.9.3"
 voyageai = "^0.1.4"
 pillow = "^10.2.0"
-tiktoken = "^0.5.2"
-cohere = "4.45"
+tiktoken = ">=0.7,<1"
 faiss-cpu = "^1.10.0"
 dotenv = "^0.9.9"
+langchain-elasticsearch = "^0.3.2"
+langchain-cohere = "^0.4.3"
 
 
 [tool.poetry.group.lint.dependencies]

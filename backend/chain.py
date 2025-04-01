@@ -3,13 +3,12 @@ from dotenv import load_dotenv
 from operator import itemgetter
 from typing import Dict, List, Optional, Sequence
 
-import weaviate
 from constants import WEAVIATE_DOCS_INDEX_NAME
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from ingest import get_embeddings_model
 from langchain_anthropic import ChatAnthropic
-from langchain_community.chat_models import ChatCohere
+from langchain_cohere import ChatCohere
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_core.language_models import LanguageModelLike
@@ -20,7 +19,7 @@ from langchain_core.prompts import (
     MessagesPlaceholder,
     PromptTemplate,
 )
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.runnables import (
     ConfigurableField,
