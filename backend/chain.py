@@ -3,13 +3,12 @@ from dotenv import load_dotenv
 from operator import itemgetter
 from typing import Dict, List, Optional, Sequence
 
-from constants import WEAVIATE_DOCS_INDEX_NAME
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from ingest import get_embeddings_model
+from ingest import get_embeddings_model, get_data_vector_store
 from langchain_anthropic import ChatAnthropic
 from langchain_cohere import ChatCohere
-from langchain_community.vectorstores import FAISS
+from langchain_community.vectorstores import ElasticsearchStore
 from langchain_core.documents import Document
 from langchain_core.language_models import LanguageModelLike
 from langchain_core.messages import AIMessage, HumanMessage
@@ -116,12 +115,10 @@ class ChatRequest(BaseModel):
 
 
 def get_retriever() -> BaseRetriever:
-    FAISS_DB_PATH = os.environ["FAISS_DB_PATH"]
+    vector_store = get_data_vector_store(get_embeddings_model())
+    # results = vector_store.similarity_search("What is this website about?", k=10)
 
-    vector_store = FAISS.load_local(FAISS_DB_PATH, get_embeddings_model(), allow_dangerous_deserialization=True)
-    # results = vector_store.similarity_search("What is this website about?", k=3)
-
-    return vector_store.as_retriever(search_type="mmr", search_kwargs=dict(k=6))
+    return vector_store.as_retriever(search_type="similarity_score_threshold", search_kwargs={"score_threshold": 0.2})
 
 
 def create_retriever_chain(
