@@ -10,6 +10,14 @@ RUN poetry install --no-interaction --no-ansi --no-root --no-directory
 
 COPY ./backend/*.py ./backend/
 
+COPY .env .
+
 RUN poetry install  --no-interaction --no-ansi
 
-CMD exec uvicorn --app-dir=backend main:app --host 0.0.0.0 --port 8080
+# Copy entrypoint script
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+
+# Run entrypoint script when container starts
+CMD ["./entrypoint.sh"]
+
