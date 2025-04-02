@@ -47,9 +47,7 @@ export function ChatWindow(props: { conversationId: string }) {
   const [messages, setMessages] = useState<Array<Message>>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [llm, setLlm] = useState(
-    searchParams.get("llm") ?? "gpt_4o",
-  );
+  const [llm, setLlm] = useState("gpt_4o");
   const [llmIsLoading, setLlmIsLoading] = useState(true);
   useEffect(() => {
     setLlm(searchParams.get("llm") ?? defaultLlmValue);
@@ -111,7 +109,7 @@ export function ChatWindow(props: { conversationId: string }) {
           timeout: 60000,
         },
       });
-      const llmDisplayName = llm ?? "gpt_4o";
+      const llmDisplayName = "gpt_4o";
       const streamLog = await remoteChain.streamLog(
         {
           question: messageValue,
@@ -212,15 +210,15 @@ export function ChatWindow(props: { conversationId: string }) {
       <Flex
         direction={"column"}
         alignItems={"center"}
-        marginTop={messages.length > 0 ? "" : "64px"}
+        marginTop={messages.length > 0 ? "" : "32px"}
       >
         <Heading
           fontSize={messages.length > 0 ? "2xl" : "3xl"}
-          fontWeight={"medium"}
+          fontWeight={"700"}
           mb={1}
           color={"white"}
         >
-          Chat LangChain 🦜🔗
+          Devies GPT
         </Heading>
         {messages.length > 0 ? (
           <Heading fontSize="md" fontWeight={"normal"} mb={1} color={"white"}>
@@ -234,34 +232,18 @@ export function ChatWindow(props: { conversationId: string }) {
             marginTop={"10px"}
             textAlign={"center"}
           >
-            Ask me anything about LangChain&apos;s{" "}
-            <Link href="https://python.langchain.com/" color={"blue.200"}>
-              Python documentation!
+            Ask me anything about{" "}
+            <Link href="https://devies.se/" color={"blue.200"}>
+              Devies
             </Link>
           </Heading>
         )}
         <div className="text-white flex flex-wrap items-center mt-4">
-          <div className="flex items-center mb-2">
-            <span className="shrink-0 mr-2">Powered by</span>
+          <div className="flex items-center">
             {llmIsLoading ? (
               <Spinner className="my-2"></Spinner>
             ) : (
-              <Select
-                value={llm}
-                onChange={(e) => {
-                  insertUrlParam("llm", e.target.value);
-                  setLlm(e.target.value);
-                }}
-                width={"240px"}
-              >
-                <option value="gpt_4o">GPT-4o</option>
-                <option value="anthropic_claude_3_haiku">Claude 3 Haiku</option>
-                <option value="google_gemini_pro">Google Gemini Pro</option>
-                <option value="fireworks_mixtral">
-                  Mixtral (via Fireworks.ai)
-                </option>
-                <option value="cohere_command">Cohere</option>
-              </Select>
+              <div className="flex items-center mb-2"></div>
             )}
           </div>
         </div>
@@ -290,8 +272,9 @@ export function ChatWindow(props: { conversationId: string }) {
         <AutoResizeTextarea
           value={input}
           maxRows={5}
+          marginTop={"28px"}
           marginRight={"56px"}
-          placeholder="What does RunnablePassthrough.assign() do?"
+          placeholder="Are there available employees open for new assignments?"
           textColor={"white"}
           borderColor={"rgb(58, 58, 61)"}
           onChange={(e) => setInput(e.target.value)}
@@ -321,14 +304,14 @@ export function ChatWindow(props: { conversationId: string }) {
       </InputGroup>
 
       {messages.length === 0 ? (
-        <footer className="flex justify-center absolute bottom-8">
+        <footer className="flex justify-center p-6">
           <a
-            href="https://github.com/langchain-ai/chat-langchain"
+            href="https://github.com/DeviesDevelopment"
             target="_blank"
             className="text-white flex items-center"
           >
             <img src="/images/github-mark.svg" className="h-4 mr-1" />
-            <span>View Source</span>
+            <span>Devies open source projects</span>
           </a>
         </footer>
       ) : (

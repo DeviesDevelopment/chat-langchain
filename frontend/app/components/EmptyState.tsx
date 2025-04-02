@@ -14,7 +14,7 @@ export function EmptyState(props: { onChoice: (question: string) => any }) {
   };
   return (
     <div className="rounded flex flex-col items-center max-w-full md:p-8">
-      <Flex marginTop={"25px"} grow={1} maxWidth={"800px"} width={"100%"}>
+      <Flex grow={1} maxWidth={"800px"} width={"100%"}>
         <Card
           onMouseUp={handleClick}
           width={"48%"}
@@ -31,7 +31,7 @@ export function EmptyState(props: { onChoice: (question: string) => any }) {
               color={"gray.200"}
               textAlign={"center"}
             >
-              How do I use a RecursiveUrlLoader to load content from a page?
+              What do you know about Devies?
             </Heading>
           </CardHeader>
         </Card>
@@ -52,7 +52,7 @@ export function EmptyState(props: { onChoice: (question: string) => any }) {
               color={"gray.200"}
               textAlign={"center"}
             >
-              What does RunnablePassthrough.assign() do?
+              What kind of solutions do Devies currently provide?
             </Heading>
           </CardHeader>
         </Card>
@@ -74,7 +74,7 @@ export function EmptyState(props: { onChoice: (question: string) => any }) {
               color={"gray.200"}
               textAlign={"center"}
             >
-              Explain multi-vector retrieval and how it can improve results.
+              Are there available employees open for new assignments?
             </Heading>
           </CardHeader>
         </Card>
@@ -95,7 +95,7 @@ export function EmptyState(props: { onChoice: (question: string) => any }) {
               color={"gray.200"}
               textAlign={"center"}
             >
-              How do I run a model locally on my laptop with Ollama?
+              What are the clients and partners that Devies have worked with?
             </Heading>
           </CardHeader>
         </Card>
