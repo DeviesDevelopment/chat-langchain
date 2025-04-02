@@ -1,0 +1,47 @@
+name: Deploy Backend to Azure Container Apps
+
+on:
+  push:
+    branches:
+      - langserver-openai
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Login to Azure
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Login to Azure Container Registry
+      uses: azure/docker-login@v2
+      with:
+        login-server: deviesprbot.azurecr.io
+        username: ${{ secrets.DEVIES_PR_ACR_USERNAME }}
+        password: ${{ secrets.DEVIES_PR_ACR_PASSWORD }}
+
+    - name: Build and Push Docker Image
+      run: |
+        docker build -t deviesprbot.azurecr.io/deviesprbot:${{ github.sha }} .
+        docker push deviesprbot.azurecr.io/deviesprbot:${{ github.sha }}
+
+    - name: Deploy to Azure Container Apps
+      uses: azure/container-apps-deploy-action@v2
+      with:
+        appSourcePath: .
+        registryUrl: deviesprbot.azurecr.io
+        registryUsername: ${{ secrets.DEVIES_PR_ACR_USERNAME }}
+        registryPassword: ${{ secrets.DEVIES_PR_ACR_PASSWORD }}
+        containerAppName: deviesprbot-env
+        resourceGroup: DeviesBlogGPT
+        imageToDeploy: deviesprbot.azurecr.io/deviesprbot:${{ github.sha }}
