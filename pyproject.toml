@@ -29,6 +29,8 @@ faiss-cpu = "^1.10.0"
 dotenv = "^0.9.9"
 langchain-elasticsearch = "^0.3.2"
 langchain-cohere = "^0.4.3"
+azure-storage-blob = "^12.25.1"
+unstructured = {extras = ["pdf"], version = "^0.17.2"}
 
 
 [tool.poetry.group.lint.dependencies]

@@ -8,7 +8,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from ingest import get_embeddings_model, get_data_vector_store
 from langchain_anthropic import ChatAnthropic
 from langchain_cohere import ChatCohere
-from langchain_community.vectorstores import ElasticsearchStore
 from langchain_core.documents import Document
 from langchain_core.language_models import LanguageModelLike
 from langchain_core.messages import AIMessage, HumanMessage

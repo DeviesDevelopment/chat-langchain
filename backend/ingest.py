@@ -7,10 +7,8 @@ from parser import langchain_docs_extractor
 from dotenv import load_dotenv
 
 from bs4 import BeautifulSoup, SoupStrainer
-from constants import WEAVIATE_DOCS_INDEX_NAME
-from langchain_community.document_loaders import RecursiveUrlLoader, SitemapLoader
+from langchain_community.document_loaders import AzureBlobStorageContainerLoader, SitemapLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.utils.html import PREFIXES_TO_IGNORE_REGEX, SUFFIXES_TO_IGNORE_REGEX
 from langchain_community.vectorstores import ElasticsearchStore
 from langchain_core.embeddings import Embeddings
 from langchain_core.documents import Document
@@ -69,6 +67,17 @@ def metadata_extractor(meta: dict, soup: BeautifulSoup) -> dict:
     }
 
 
+def load_azure_blob_docs():
+    AZURE_BLOB_CONN = os.environ["AZURE_BLOB_CONN"]
+    AZURE_BLOB_CONTAINER = os.environ["AZURE_BLOB_CONTAINER"]
+
+    return AzureBlobStorageContainerLoader(
+        conn_str=AZURE_BLOB_CONN,
+        container=AZURE_BLOB_CONTAINER,
+        prefix="cvs/"
+    ).load()
+
+
 def load_webpage_docs():
     return SitemapLoader(
         "https://www.devies.se/sitemap.xml",
@@ -90,11 +99,13 @@ def ingest_docs():
     # create ElasticSearch instance for data
     data_vector_store = get_data_vector_store(embedding)
 
+    docs_from_azure_blob = load_azure_blob_docs()
+    logger.info(f"Loaded {len(docs_from_azure_blob)} docs from azure blob")
     docs_from_api = load_webpage_docs()
     logger.info(f"Loaded {len(docs_from_api)} docs from sitemap")
     
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=200)
-    docs_transformed = text_splitter.split_documents(docs_from_api)
+    docs_transformed = text_splitter.split_documents(docs_from_azure_blob + docs_from_api)
     docs_transformed = [doc for doc in docs_transformed if len(doc.page_content) > 10]
 
     # clear index
