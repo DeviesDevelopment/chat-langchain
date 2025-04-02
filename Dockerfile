@@ -10,8 +10,6 @@ RUN poetry install --no-interaction --no-ansi --no-root --no-directory
 
 COPY ./backend/*.py ./backend/
 
-COPY .env .
-
 RUN poetry install  --no-interaction --no-ansi
 
 # Copy entrypoint script

@@ -45,3 +45,15 @@ jobs:
         containerAppName: deviesprbot-env
         resourceGroup: DeviesBlogGPT
         imageToDeploy: deviesprbot.azurecr.io/deviesprbot:${{ github.sha }}
+        environmentVariables: |
+          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          ELASTIC_DB_USER=${{ secrets.ELASTIC_DB_USER }}
+          ELASTIC_DB_PASS=${{ secrets.ELASTIC_DB_PASS }}
+          ELASTIC_DB_API_KEY=${{ secrets.ELASTIC_DB_API_KEY }}
+          ELASTIC_DB_URL=${{ secrets.ELASTIC_DB_URL }}
+          ELASTIC_DB_INDEX_NAME=${{ secrets.ELASTIC_DB_INDEX_NAME }}
+          AZURE_BLOB_CONN=${{ secrets.AZURE_BLOB_CONN }}
+          AZURE_BLOB_CONTAINER=${{ secrets.AZURE_BLOB_CONTAINER }}
+
+
+
