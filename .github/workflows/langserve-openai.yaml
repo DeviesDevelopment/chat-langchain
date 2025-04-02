@@ -3,7 +3,7 @@ name: Deploy Backend to Azure Container Apps
 on:
   push:
     branches:
-      - langserver-openai
+      - langserve-openai
 
 permissions:
   contents: read
