@@ -1,10 +1,10 @@
 """Main entrypoint for the app."""
-import asyncio
 from typing import Optional, Union
 from uuid import UUID
 
 from chain import ChatRequest, answer_chain
 from fastapi import FastAPI
+from fastapi.responses import PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from langserve import add_routes
 from pydantic import BaseModel
@@ -45,9 +45,9 @@ class UpdateFeedbackBody(BaseModel):
     comment: Optional[str] = None
 
 
-# TODO: Update when async API is available
-async def _arun(func, *args, **kwargs):
-    return await asyncio.get_running_loop().run_in_executor(None, func, *args, **kwargs)
+@app.get("/health", response_class=PlainTextResponse)
+def health_check():
+    return "OK"
 
 
 class GetTraceBody(BaseModel):
