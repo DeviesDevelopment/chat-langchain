@@ -2,16 +2,14 @@
 import logging
 import os
 
-from langchain_elasticsearch import DenseVectorStrategy
+from langchain_elasticsearch import ElasticsearchStore
 from parser import langchain_docs_extractor
 from dotenv import load_dotenv
 
 from bs4 import BeautifulSoup, SoupStrainer
 from langchain_community.document_loaders import AzureBlobStorageContainerLoader, SitemapLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import ElasticsearchStore
 from langchain_core.embeddings import Embeddings
-from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
 load_dotenv()
