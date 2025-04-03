@@ -1,12 +1,15 @@
 """Load html from files, clean up, split, ingest into Weaviate."""
 import logging
 import os
+import json
+import unicodedata
 
 from langchain_elasticsearch import ElasticsearchStore
 from parser import langchain_docs_extractor
 from dotenv import load_dotenv
 
 from bs4 import BeautifulSoup, SoupStrainer
+from langchain_core.documents import Document
 from langchain_community.document_loaders import AzureBlobStorageContainerLoader, SitemapLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.embeddings import Embeddings
@@ -65,15 +68,39 @@ def metadata_extractor(meta: dict, soup: BeautifulSoup) -> dict:
     }
 
 
+def fix_azure_docs_metadata(docs:list[Document]):
+    AZURE_BLOB_CONN = os.environ["AZURE_BLOB_CONN"]
+    AZURE_BLOB_CONTAINER = os.environ["AZURE_BLOB_CONTAINER"]
+
+    endpoint_key = "BlobEndpoint="
+    start_index = AZURE_BLOB_CONN.find(endpoint_key)
+    blob_endpoint = AZURE_BLOB_CONN[start_index + len(endpoint_key):]
+
+    for doc in docs:
+        raw_source_path = doc.metadata.get('source')
+
+        container_key_index = raw_source_path.find(AZURE_BLOB_CONTAINER)
+        folder_path = raw_source_path[container_key_index:]
+        
+        filename = os.path.basename(folder_path)
+        clean_filename = unicodedata.normalize("NFC", filename)
+
+        doc.metadata["source"] = blob_endpoint + folder_path
+        doc.metadata["title"] = clean_filename
+    return docs
+
+
 def load_azure_blob_docs():
     AZURE_BLOB_CONN = os.environ["AZURE_BLOB_CONN"]
     AZURE_BLOB_CONTAINER = os.environ["AZURE_BLOB_CONTAINER"]
 
-    return AzureBlobStorageContainerLoader(
+    azure_blob_docs = AzureBlobStorageContainerLoader(
         conn_str=AZURE_BLOB_CONN,
         container=AZURE_BLOB_CONTAINER,
         prefix="cvs/"
     ).load()
+
+    return fix_azure_docs_metadata(azure_blob_docs)
 
 
 def load_webpage_docs():
@@ -97,11 +124,16 @@ def ingest_docs():
     # create ElasticSearch instance for data
     data_vector_store = get_data_vector_store(embedding)
 
-    docs_from_azure_blob = load_azure_blob_docs()
-    logger.info(f"Loaded {len(docs_from_azure_blob)} docs from azure blob")
     docs_from_api = load_webpage_docs()
     logger.info(f"Loaded {len(docs_from_api)} docs from sitemap")
+    docs_from_azure_blob = load_azure_blob_docs()
+    logger.info(f"Loaded {len(docs_from_azure_blob)} docs from azure blob")
     
+    # Convert list of objects to list of dictionaries
+    # api_dicts = [docs_api.__dict__ for docs_api in docs_from_api]
+    # blob_dicts = [docs_blob.__dict__ for docs_blob in docs_from_azure_blob]
+    # blob_json_string = json.dumps(blob_dicts, indent=4)
+
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=200)
     docs_transformed = text_splitter.split_documents(docs_from_azure_blob + docs_from_api)
     docs_transformed = [doc for doc in docs_transformed if len(doc.page_content) > 10]
