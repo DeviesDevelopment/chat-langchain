@@ -1,0 +1,29 @@
+services:
+  backend:
+    image: deviesprbot.azurecr.io/deviesprbot:${DOCKER_IMAGE_TAG}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - CHROMA_HOST=http://chroma
+      - CHROMA_PORT=8000
+      - CHROMA_COLLECTION_NAME=devies-sales-info
+    depends_on:
+      - chroma
+
+  chroma:
+    image: ghcr.io/chroma-core/chroma:0.6.3
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  chroma_data:

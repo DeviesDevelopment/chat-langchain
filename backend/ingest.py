@@ -2,9 +2,9 @@
 import logging
 import os
 import json
+import chromadb
 import unicodedata
 
-from langchain_elasticsearch import ElasticsearchStore
 from parser import langchain_docs_extractor
 from dotenv import load_dotenv
 
@@ -14,15 +14,20 @@ from langchain_community.document_loaders import AzureBlobStorageContainerLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.embeddings import Embeddings
 from langchain_openai import OpenAIEmbeddings
+from langchain_chroma import Chroma
 
 load_dotenv()
 
 
-ELASTIC_DB_USER = os.environ["ELASTIC_DB_USER"]
-ELASTIC_DB_PASS = os.environ["ELASTIC_DB_PASS"]
-ELASTIC_DB_API_KEY = os.environ["ELASTIC_DB_API_KEY"]
-ELASTIC_DB_URL = os.environ["ELASTIC_DB_URL"]
-ELASTIC_DB_INDEX_NAME = os.environ["ELASTIC_DB_INDEX_NAME"]
+CHROMA_HOST = os.environ["CHROMA_HOST"]
+CHROMA_PORT = os.environ["CHROMA_PORT"]
+CHROMA_COLLECTION_NAME = os.environ["CHROMA_COLLECTION_NAME"]
+
+chroma_client = chromadb.HttpClient(
+    host=CHROMA_HOST,
+    port=CHROMA_PORT,
+    ssl=False # Set to True if using HTTPS
+)
 
 
 logging.basicConfig(level=logging.INFO)
@@ -34,23 +39,18 @@ def get_embeddings_model() -> Embeddings:
 
 
 def get_data_vector_store(embeddings: Embeddings):
-    return ElasticsearchStore(
-        ELASTIC_DB_INDEX_NAME,
-        embedding=embeddings,
-        es_user=ELASTIC_DB_USER,
-        es_password=ELASTIC_DB_PASS,
-        es_api_key=ELASTIC_DB_API_KEY,
-        es_url=ELASTIC_DB_URL)
+    # implementation for chromadb
+    return Chroma(
+        client=chroma_client,
+        collection_name=CHROMA_COLLECTION_NAME,
+        embedding_function=embeddings
+)
 
 
-def delete_entire_index(vector_store):
+def delete_collection():
     try:
-        # Delete the entire index
-        vector_store.client.indices.delete(
-            index=vector_store.index_name,
-            ignore_unavailable=True
-        )
-        print(f"Index {vector_store.index_name} deleted successfully")
+        chroma_client.delete_collection(name=CHROMA_COLLECTION_NAME)
+        print(f"Collection {CHROMA_COLLECTION_NAME} deleted successfully")
     except Exception as e:
         print(f"Error deleting index: {e}")
 
@@ -129,17 +129,12 @@ def ingest_docs():
     docs_from_azure_blob = load_azure_blob_docs()
     logger.info(f"Loaded {len(docs_from_azure_blob)} docs from azure blob")
     
-    # Convert list of objects to list of dictionaries
-    # api_dicts = [docs_api.__dict__ for docs_api in docs_from_api]
-    # blob_dicts = [docs_blob.__dict__ for docs_blob in docs_from_azure_blob]
-    # blob_json_string = json.dumps(blob_dicts, indent=4)
-
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=200)
     docs_transformed = text_splitter.split_documents(docs_from_azure_blob + docs_from_api)
     docs_transformed = [doc for doc in docs_transformed if len(doc.page_content) > 10]
 
     # clear index
-    delete_entire_index(data_vector_store)
+    delete_collection()
 
     # create new and populate with new docs
     data_vector_store = get_data_vector_store(embeddings=embedding)
