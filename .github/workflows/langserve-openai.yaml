@@ -39,7 +39,7 @@ jobs:
         docker-compose -f docker-compose.yaml push
 
     - name: Deploy to Azure Container Apps
-      uses: azure/container-apps-compose-deploy-action@v1
+      uses: azure/container-apps-compose-deploy-action@v0
       with:
         compose-file: docker-compose.yaml
         registry-url: deviesprbot.azurecr.io
