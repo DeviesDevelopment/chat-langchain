@@ -1,4 +1,4 @@
-FROM python:3.11-buster
+FROM python:3.11-bookworm
 
 # Install system packages OpenCV needs
 RUN apt-get update && apt-get install -y libgl1 libglib2.0-0

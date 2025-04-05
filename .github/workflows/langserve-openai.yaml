@@ -16,9 +16,6 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set Docker image tag to commit SHA
-      run: echo "DOCKER_IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
-
     - name: Login to Azure
       uses: azure/login@v2
       with:
@@ -33,20 +30,21 @@ jobs:
         username: ${{ secrets.DEVIES_PR_ACR_USERNAME }}
         password: ${{ secrets.DEVIES_PR_ACR_PASSWORD }}
 
-    - name: Build and Push Docker Images (Compose)
+    - name: Build and Push Docker Image
       run: |
-        docker-compose -f docker-compose.yaml build
-        docker-compose -f docker-compose.yaml push
+        docker build -t deviesprbot.azurecr.io/deviesprbot:${{ github.sha }} .
+        docker push deviesprbot.azurecr.io/deviesprbot:${{ github.sha }}
 
     - name: Deploy to Azure Container Apps
-      uses: azure/container-apps-compose-deploy-action@v1
+      uses: azure/container-apps-deploy-action@v2
       with:
-        compose-file: docker-compose.yaml
-        registry-url: deviesprbot.azurecr.io
-        registry-username: ${{ secrets.DEVIES_PR_ACR_USERNAME }}
-        registry-password: ${{ secrets.DEVIES_PR_ACR_PASSWORD }}
-        container-app-env: deviesprbot-env
-        resource-group: DeviesBlogGPT
+        appSourcePath: .
+        registryUrl: deviesprbot.azurecr.io
+        registryUsername: ${{ secrets.DEVIES_PR_ACR_USERNAME }}
+        registryPassword: ${{ secrets.DEVIES_PR_ACR_PASSWORD }}
+        containerAppName: deviesprbot-env
+        resourceGroup: DeviesBlogGPT
+        imageToDeploy: deviesprbot.azurecr.io/deviesprbot:${{ github.sha }}
 
 
 
