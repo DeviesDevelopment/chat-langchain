@@ -33,7 +33,7 @@ def get_embeddings_model() -> Embeddings:
 def get_data_vector_store(embeddings: Embeddings):
     # implementation for chromadb
     return Chroma(
-        persist_directory="./chroma_db",
+        persist_directory="/tmp/chroma_db",
         collection_name=CHROMA_COLLECTION_NAME,
         embedding_function=embeddings
 )
