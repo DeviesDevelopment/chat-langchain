@@ -2,11 +2,6 @@
 import logging
 import os
 import json
-
-__import__('pysqlite3')
-import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-
 import chromadb
 import unicodedata
 
@@ -24,15 +19,7 @@ from langchain_chroma import Chroma
 load_dotenv()
 
 
-CHROMA_HOST = os.environ["CHROMA_HOST"]
-CHROMA_PORT = os.environ["CHROMA_PORT"]
 CHROMA_COLLECTION_NAME = os.environ["CHROMA_COLLECTION_NAME"]
-
-chroma_client = chromadb.HttpClient(
-    host=CHROMA_HOST,
-    port=CHROMA_PORT,
-    ssl=False # Set to True if using HTTPS
-)
 
 
 logging.basicConfig(level=logging.INFO)
@@ -46,15 +33,16 @@ def get_embeddings_model() -> Embeddings:
 def get_data_vector_store(embeddings: Embeddings):
     # implementation for chromadb
     return Chroma(
-        client=chroma_client,
+        persist_directory="./chroma_db",
         collection_name=CHROMA_COLLECTION_NAME,
         embedding_function=embeddings
 )
 
 
-def delete_collection():
+def delete_collection(embeddings: Embeddings):
     try:
-        chroma_client.delete_collection(name=CHROMA_COLLECTION_NAME)
+        vector_store = get_data_vector_store(embeddings)
+        vector_store.delete_collection()
         print(f"Collection {CHROMA_COLLECTION_NAME} deleted successfully")
     except Exception as e:
         print(f"Error deleting index: {e}")
@@ -139,7 +127,7 @@ def ingest_docs():
     docs_transformed = [doc for doc in docs_transformed if len(doc.page_content) > 10]
 
     # clear index
-    delete_collection()
+    delete_collection(embedding)
 
     # create new and populate with new docs
     data_vector_store = get_data_vector_store(embeddings=embedding)
