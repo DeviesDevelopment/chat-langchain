@@ -21,11 +21,9 @@ RUN useradd -u 1000 appuser
 
 COPY ./pyproject.toml ./poetry.lock* ./
 
-RUN poetry install --no-interaction --no-ansi --no-root --no-directory
-
 COPY ./backend/*.py ./backend/
 
-RUN poetry install  --no-interaction --no-ansi
+RUN poetry install --no-interaction --no-ansi
 
 # Create all known write paths (add yours here)
 RUN mkdir -p /tmp/chroma_db /tmp/nltk_data && \
