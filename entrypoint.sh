@@ -1,9 +1,9 @@
 #!/bin/sh
 set -e
 
-echo "Running ingest step..."
+# echo "Running ingest step..."
 # Run your Python script
-python ./backend/ingest.py
+# python ./backend/ingest.py
 
 echo "Starting Uvicorn..."
 # Start your app with Uvicorn

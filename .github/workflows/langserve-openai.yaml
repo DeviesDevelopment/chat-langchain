@@ -42,7 +42,7 @@ jobs:
         registryUrl: deviesprbot.azurecr.io
         registryUsername: ${{ secrets.DEVIES_PR_ACR_USERNAME }}
         registryPassword: ${{ secrets.DEVIES_PR_ACR_PASSWORD }}
-        containerAppName: deviesprbot-env
+        containerAppName: deviesprbot
         resourceGroup: DeviesBlogGPT
         imageToDeploy: deviesprbot.azurecr.io/deviesprbot:${{ github.sha }}
 

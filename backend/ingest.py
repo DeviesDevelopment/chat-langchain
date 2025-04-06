@@ -1,7 +1,6 @@
 """Load html from files, clean up, split, ingest into Weaviate."""
 import logging
 import os
-import json
 import chromadb
 import unicodedata
 
@@ -16,10 +15,19 @@ from langchain_core.embeddings import Embeddings
 from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
 
-load_dotenv()
+load_dotenv(override=True)
 
 
+CHROMA_HOST = os.environ["CHROMA_HOST"]
+CHROMA_PORT = os.environ["CHROMA_PORT"]
 CHROMA_COLLECTION_NAME = os.environ["CHROMA_COLLECTION_NAME"]
+
+
+chroma_client = chromadb.HttpClient(
+     host=CHROMA_HOST,
+     port=CHROMA_PORT,
+     ssl=True
+ )
 
 
 logging.basicConfig(level=logging.INFO)
@@ -33,7 +41,7 @@ def get_embeddings_model() -> Embeddings:
 def get_data_vector_store(embeddings: Embeddings):
     # implementation for chromadb
     return Chroma(
-        persist_directory="/tmp/chroma_db",
+        client=chroma_client,
         collection_name=CHROMA_COLLECTION_NAME,
         embedding_function=embeddings
 )
