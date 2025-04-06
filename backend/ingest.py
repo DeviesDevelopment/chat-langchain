@@ -1,33 +1,32 @@
 """Load html from files, clean up, split, ingest into Weaviate."""
 import logging
 import os
-import chromadb
 import unicodedata
 
 from parser import langchain_docs_extractor
 from dotenv import load_dotenv
 
+import weaviate
+from weaviate.classes.init import Auth
 from bs4 import BeautifulSoup, SoupStrainer
 from langchain_core.documents import Document
 from langchain_community.document_loaders import AzureBlobStorageContainerLoader, SitemapLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.embeddings import Embeddings
 from langchain_openai import OpenAIEmbeddings
-from langchain_chroma import Chroma
+from langchain_weaviate import WeaviateVectorStore
 
 load_dotenv(override=True)
 
 
-CHROMA_HOST = os.environ["CHROMA_HOST"]
-CHROMA_PORT = os.environ["CHROMA_PORT"]
-CHROMA_COLLECTION_NAME = os.environ["CHROMA_COLLECTION_NAME"]
+WEAVIATE_URL = os.environ["WEAVIATE_URL"]
+WEAVIATE_API_KEY = os.environ["WEAVIATE_API_KEY"]
 
 
-chroma_client = chromadb.HttpClient(
-     host=CHROMA_HOST,
-     port=CHROMA_PORT,
-     ssl=True
- )
+client = weaviate.connect_to_weaviate_cloud(
+            cluster_url=WEAVIATE_URL,
+            auth_credentials=Auth.api_key(WEAVIATE_API_KEY),
+        )
 
 
 logging.basicConfig(level=logging.INFO)
@@ -39,19 +38,20 @@ def get_embeddings_model() -> Embeddings:
 
 
 def get_data_vector_store(embeddings: Embeddings):
-    # implementation for chromadb
-    return Chroma(
-        client=chroma_client,
-        collection_name=CHROMA_COLLECTION_NAME,
-        embedding_function=embeddings
-)
+    return WeaviateVectorStore(
+        client=client,
+        index_name='',
+        text_key="text",
+        embedding=embeddings,
+        attributes=["source", "title"],
+    )
 
 
 def delete_collection(embeddings: Embeddings):
     try:
         vector_store = get_data_vector_store(embeddings)
         vector_store.delete_collection()
-        print(f"Collection {CHROMA_COLLECTION_NAME} deleted successfully")
+        print(f"Collections deleted successfully")
     except Exception as e:
         print(f"Error deleting index: {e}")
 
