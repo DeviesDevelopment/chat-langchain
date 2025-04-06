@@ -7,6 +7,10 @@ from parser import langchain_docs_extractor
 from dotenv import load_dotenv
 
 import weaviate
+from weaviate.collections import Collection
+from weaviate.collections.classes.config import Property, CollectionConfig
+import weaviate.classes as wvc
+
 from weaviate.classes.init import Auth
 from bs4 import BeautifulSoup, SoupStrainer
 from langchain_core.documents import Document
@@ -23,7 +27,7 @@ WEAVIATE_URL = os.environ["WEAVIATE_URL"]
 WEAVIATE_API_KEY = os.environ["WEAVIATE_API_KEY"]
 
 
-client = weaviate.connect_to_weaviate_cloud(
+weaviate_client = weaviate.connect_to_weaviate_cloud(
             cluster_url=WEAVIATE_URL,
             auth_credentials=Auth.api_key(WEAVIATE_API_KEY),
         )
@@ -37,10 +41,23 @@ def get_embeddings_model() -> Embeddings:
     return OpenAIEmbeddings(model="text-embedding-3-small", chunk_size=200)
 
 
+def check_collection_index():
+    if "Sales" not in weaviate_client.collections.list_all():
+        weaviate_client.collections.create(
+            name="Sales",
+            properties=[
+                Property(name="text", data_type=wvc.config.DataType.TEXT),
+                Property(name="source", data_type=wvc.config.DataType.TEXT),
+                Property(name="title", data_type=wvc.config.DataType.TEXT),
+            ]
+        )
+
+
 def get_data_vector_store(embeddings: Embeddings):
+    check_collection_index()
     return WeaviateVectorStore(
-        client=client,
-        index_name='',
+        client=weaviate_client,
+        index_name='Sales',
         text_key="text",
         embedding=embeddings,
         attributes=["source", "title"],

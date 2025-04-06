@@ -17,7 +17,7 @@ langchain-anthropic = ">=0.2.0,<0.3.0"
 langchain-fireworks = ">=0.2.0,<0.3.0"
 langserve = {extras = ["server"], version = "^0.3.0"}
 fastapi = "^0.103.1"
-pydantic = ">=2.7.4,<3.0.0"
+pydantic = ">=2.0,<2.11"
 uvicorn = "^0.23.2"
 beautifulsoup4 = "^4.12.2"
 psycopg2 = "^2.9.7"
