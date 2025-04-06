@@ -16,9 +16,6 @@ RUN pip install poetry==1.5.1
 
 RUN poetry config virtualenvs.create false
 
-# Create a non-root user (UID 1000 to match ACA)
-RUN useradd -u 1000 appuser
-
 COPY ./pyproject.toml ./poetry.lock* ./
 
 COPY ./backend/*.py ./backend/
@@ -35,9 +32,6 @@ RUN python -m nltk.downloader -d /tmp/nltk_data punkt punkt_tab
 # Copy entrypoint script
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
-
-# Switch to non-root user
-USER 1000
 
 # Run entrypoint script when container starts
 CMD ["./entrypoint.sh"]

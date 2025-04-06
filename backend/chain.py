@@ -94,7 +94,7 @@ Follow Up Input: {question}
 Standalone Question:"""
 
 
-load_dotenv()
+load_dotenv(override=True)
 
 
 app = FastAPI()
