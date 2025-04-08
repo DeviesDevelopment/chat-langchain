@@ -64,10 +64,9 @@ def get_data_vector_store(embeddings: Embeddings):
     )
 
 
-def delete_collection(embeddings: Embeddings):
+def delete_collection():
     try:
-        vector_store = get_data_vector_store(embeddings)
-        vector_store.delete_collection()
+        weaviate_client.collections.delete('Sales')
         print(f"Collections deleted successfully")
     except Exception as e:
         print(f"Error deleting index: {e}")
@@ -142,17 +141,21 @@ def ingest_docs():
     # create ElasticSearch instance for data
     data_vector_store = get_data_vector_store(embedding)
 
-    docs_from_api = load_webpage_docs()
-    logger.info(f"Loaded {len(docs_from_api)} docs from sitemap")
+    docs_from_webpage = load_webpage_docs()
+    logger.info(f"Loaded {len(docs_from_webpage)} docs from sitemap")
+
+    docs_from_webpage = [doc for doc in docs_from_webpage if doc.metadata.get('source') != "https://www.devies.se/news/uppstickaren-devies-rekryterar-patrik-holm-och-expanderar/"]
+    logger.info(f"Webpage filter result: {len(docs_from_webpage)} docs from sitemap")
+
     docs_from_azure_blob = load_azure_blob_docs()
     logger.info(f"Loaded {len(docs_from_azure_blob)} docs from azure blob")
     
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=200)
-    docs_transformed = text_splitter.split_documents(docs_from_azure_blob + docs_from_api)
+    docs_transformed = text_splitter.split_documents(docs_from_azure_blob + docs_from_webpage)
     docs_transformed = [doc for doc in docs_transformed if len(doc.page_content) > 10]
 
     # clear index
-    delete_collection(embedding)
+    delete_collection()
 
     # create new and populate with new docs
     data_vector_store = get_data_vector_store(embeddings=embedding)
