@@ -3,14 +3,10 @@ import logging
 import os
 import unicodedata
 
+from langchain_elasticsearch import ElasticsearchStore
+
 from parser import langchain_docs_extractor
 from dotenv import load_dotenv
-
-import weaviate
-from weaviate.classes.init import Auth
-from weaviate.classes.config import DataType
-from weaviate.config import AdditionalConfig, Timeout
-from weaviate.collections.classes.config import Property
 
 from bs4 import BeautifulSoup, SoupStrainer
 from langchain_core.documents import Document
@@ -18,23 +14,15 @@ from langchain_community.document_loaders import AzureBlobStorageContainerLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.embeddings import Embeddings
 from langchain_openai import OpenAIEmbeddings
-from langchain_weaviate import WeaviateVectorStore
+
 
 load_dotenv(override=True)
 
-
-WEAVIATE_URL = os.environ["WEAVIATE_URL"]
-WEAVIATE_API_KEY = os.environ["WEAVIATE_API_KEY"]
-
-
-weaviate_client = weaviate.connect_to_weaviate_cloud(
-            cluster_url=WEAVIATE_URL,
-            auth_credentials=Auth.api_key(WEAVIATE_API_KEY),
-            skip_init_checks=True,
-            additional_config=AdditionalConfig(
-                timeout=Timeout(init=60, query=240, insert=240),
-            )
-        )
+ELASTIC_DB_USER = os.environ["ELASTIC_DB_USER"]
+ELASTIC_DB_PASS = os.environ["ELASTIC_DB_PASS"]
+ELASTIC_DB_API_KEY = os.environ["ELASTIC_DB_API_KEY"]
+ELASTIC_DB_URL = os.environ["ELASTIC_DB_URL"]
+ELASTIC_DB_INDEX_NAME = os.environ["ELASTIC_DB_INDEX_NAME"]
 
 
 logging.basicConfig(level=logging.INFO)
@@ -45,32 +33,23 @@ def get_embeddings_model() -> Embeddings:
     return OpenAIEmbeddings(model="text-embedding-3-small", chunk_size=200)
 
 
-def check_collection_index():
-    if "Sales" not in weaviate_client.collections.list_all():
-        weaviate_client.collections.create(
-            name="Sales",
-            properties=[
-                Property(name="text", data_type=DataType.TEXT),
-                Property(name="source", data_type=DataType.TEXT),
-                Property(name="title", data_type=DataType.TEXT),
-            ]
-        )
-
-
 def get_data_vector_store(embeddings: Embeddings):
-    check_collection_index()
-    return WeaviateVectorStore(
-        client=weaviate_client,
-        index_name='Sales',
-        text_key="text",
-        embedding=embeddings,
-        attributes=["source", "title"],
-    )
+     return ElasticsearchStore(
+         ELASTIC_DB_INDEX_NAME,
+         embedding=embeddings,
+         es_user=ELASTIC_DB_USER,
+         es_password=ELASTIC_DB_PASS,
+         es_api_key=ELASTIC_DB_API_KEY,
+         es_url=ELASTIC_DB_URL)
 
 
-def delete_collection():
+def delete_collection(data_vector_store: ElasticsearchStore):
     try:
-        weaviate_client.collections.delete('Sales')
+        data_vector_store.client.indices.delete(
+            index=ELASTIC_DB_INDEX_NAME, 
+            ignore_unavailable=True,
+            allow_no_indices=True
+        )
         print(f"Collections deleted successfully")
     except Exception as e:
         print(f"Error deleting index: {e}")
@@ -159,7 +138,7 @@ def ingest_docs():
     docs_transformed = [doc for doc in docs_transformed if len(doc.page_content) > 10]
 
     # clear index
-    delete_collection()
+    delete_collection(data_vector_store)
 
     # create new and populate with new docs
     data_vector_store = get_data_vector_store(embeddings=embedding)
