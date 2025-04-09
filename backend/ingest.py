@@ -7,11 +7,11 @@ from parser import langchain_docs_extractor
 from dotenv import load_dotenv
 
 import weaviate
-from weaviate.collections import Collection
-from weaviate.collections.classes.config import Property, CollectionConfig
-import weaviate.classes as wvc
-
 from weaviate.classes.init import Auth
+from weaviate.classes.config import DataType
+from weaviate.config import AdditionalConfig, Timeout
+from weaviate.collections.classes.config import Property
+
 from bs4 import BeautifulSoup, SoupStrainer
 from langchain_core.documents import Document
 from langchain_community.document_loaders import AzureBlobStorageContainerLoader, SitemapLoader
@@ -30,7 +30,10 @@ WEAVIATE_API_KEY = os.environ["WEAVIATE_API_KEY"]
 weaviate_client = weaviate.connect_to_weaviate_cloud(
             cluster_url=WEAVIATE_URL,
             auth_credentials=Auth.api_key(WEAVIATE_API_KEY),
-            skip_init_checks=True
+            skip_init_checks=True,
+            additional_config=AdditionalConfig(
+                timeout=Timeout(init=60, query=240, insert=240),
+            )
         )
 
 
@@ -47,9 +50,9 @@ def check_collection_index():
         weaviate_client.collections.create(
             name="Sales",
             properties=[
-                Property(name="text", data_type=wvc.config.DataType.TEXT),
-                Property(name="source", data_type=wvc.config.DataType.TEXT),
-                Property(name="title", data_type=wvc.config.DataType.TEXT),
+                Property(name="text", data_type=DataType.TEXT),
+                Property(name="source", data_type=DataType.TEXT),
+                Property(name="title", data_type=DataType.TEXT),
             ]
         )
 
