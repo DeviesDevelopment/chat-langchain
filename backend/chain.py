@@ -117,7 +117,7 @@ def get_retriever() -> BaseRetriever:
     vector_store = get_data_vector_store(get_embeddings_model())
     # results = vector_store.similarity_search("What is this website about?", k=10)
 
-    return vector_store.as_retriever(search_type="similarity_score_threshold", search_kwargs={"score_threshold": 0.6})
+    return vector_store.as_retriever(search_type="similarity_score_threshold", search_kwargs={"score_threshold": 0.3})
 
 
 def create_retriever_chain(
