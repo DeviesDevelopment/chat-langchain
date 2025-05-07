@@ -3,7 +3,7 @@ import logging
 import os
 import unicodedata
 
-from langchain_elasticsearch import ElasticsearchStore
+from langchain_postgres import PGVector
 
 from parser import langchain_docs_extractor
 from dotenv import load_dotenv
@@ -14,42 +14,36 @@ from langchain_community.document_loaders import AzureBlobStorageContainerLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.embeddings import Embeddings
 from langchain_openai import OpenAIEmbeddings
+from sqlalchemy.ext.asyncio import create_async_engine
 
 
 load_dotenv(override=True)
 
-ELASTIC_DB_USER = os.environ["ELASTIC_DB_USER"]
-ELASTIC_DB_PASS = os.environ["ELASTIC_DB_PASS"]
-ELASTIC_DB_API_KEY = os.environ["ELASTIC_DB_API_KEY"]
-ELASTIC_DB_URL = os.environ["ELASTIC_DB_URL"]
-ELASTIC_DB_INDEX_NAME = os.environ["ELASTIC_DB_INDEX_NAME"]
+POSTGRES_DB_CONN = os.environ["POSTGRES_DB_CONN"]
+DB_INDEX_NAME = os.environ["DB_INDEX_NAME"]
 
+engine = create_async_engine(POSTGRES_DB_CONN)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 def get_embeddings_model() -> Embeddings:
-    return OpenAIEmbeddings(model="text-embedding-3-small", chunk_size=200)
+    return OpenAIEmbeddings(model="text-embedding-3-large")
 
 
-def get_data_vector_store(embeddings: Embeddings):
-     return ElasticsearchStore(
-         ELASTIC_DB_INDEX_NAME,
-         embedding=embeddings,
-         es_user=ELASTIC_DB_USER,
-         es_password=ELASTIC_DB_PASS,
-         es_api_key=ELASTIC_DB_API_KEY,
-         es_url=ELASTIC_DB_URL)
+def get_data_vector_store(embeddings: Embeddings, async_mode: bool = False):
+     connection_mod = engine if async_mode else POSTGRES_DB_CONN
+     return PGVector(
+        embeddings=embeddings,
+        collection_name=DB_INDEX_NAME,
+        connection=connection_mod,
+        use_jsonb=True,
+    )
 
 
-def delete_collection(data_vector_store: ElasticsearchStore):
+def delete_collection(data_vector_store: PGVector):
     try:
-        data_vector_store.client.indices.delete(
-            index=ELASTIC_DB_INDEX_NAME, 
-            ignore_unavailable=True,
-            allow_no_indices=True
-        )
         print(f"Collections deleted successfully")
     except Exception as e:
         print(f"Error deleting index: {e}")
