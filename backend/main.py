@@ -8,6 +8,7 @@ from fastapi.responses import PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from langserve import add_routes
 from pydantic import BaseModel
+from ingest import ingest_docs
 
 
 app = FastAPI()
@@ -56,5 +57,7 @@ class GetTraceBody(BaseModel):
 
 if __name__ == "__main__":
     import uvicorn
+
+    ingest_docs()  # Run document ingestion before starting the server
 
     uvicorn.run(app, host="0.0.0.0", port=8080)
