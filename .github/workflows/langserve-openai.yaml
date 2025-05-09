@@ -41,9 +41,11 @@ jobs:
           cd ~
           ssh-add -D
           ssh-add ~/.ssh/id_rsa
+          rm -rf chat-langchain
           git clone git@github.com:DeviesDevelopment/chat-langchain.git
           cd chat-langchain
           git checkout langserve-openai
+          git pull origin langserve-openai
 
           # Stop and remove the existing container if it exists
           docker stop pgvector-container || true
@@ -53,7 +55,7 @@ jobs:
 
           # Build the Docker image
           docker rmi -f deviesprbot || true
-          docker build -t deviesprbot .
+          docker build -t deviesprbot:latest .
           
           # Create Docker network if it doesn't exist
           docker network create langchain-network || true
@@ -84,10 +86,12 @@ jobs:
             -e MPLCONFIGDIR="${{ secrets.MPLCONFIGDIR }}" \
             -e NLTK_DATA="${{ secrets.NLTK_DATA }}" \
             -e XDG_CACHE_HOME="${{ secrets.XDG_CACHE_HOME }}" \
-            deviesprbot
+            deviesprbot:latest
           
           # Remove the image
           docker rmi -f deviesprbot || true
 
+          # Remove the git repo
+          rm -rf chat-langchain
 
 
