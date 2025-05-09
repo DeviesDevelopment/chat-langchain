@@ -48,8 +48,8 @@ jobs:
           # Stop and remove the existing container if it exists
           docker stop pgvector-container || true
           docker rm pgvector-container || true
-          docker stop deviesprbot || true
-          docker rm deviesprbot || true
+          docker stop deviesprbot-container || true
+          docker rm deviesprbot-container || true
 
           # Build the Docker image
           docker rmi -f deviesprbot || true
@@ -71,7 +71,7 @@ jobs:
           
           # Run the new container with environment variables and network
           docker run -d \
-            --name deviesprbot \
+            --name deviesprbot-container \
             --network langchain-network \
             --restart unless-stopped \
             -p 8080:8080 \
@@ -84,7 +84,7 @@ jobs:
             -e MPLCONFIGDIR="${{ secrets.MPLCONFIGDIR }}" \
             -e NLTK_DATA="${{ secrets.NLTK_DATA }}" \
             -e XDG_CACHE_HOME="${{ secrets.XDG_CACHE_HOME }}" \
-            deviesprbot.azurecr.io/deviesprbot:${{ github.sha }}
+            deviesprbot
           
           # Remove the image
           docker rmi -f deviesprbot || true
