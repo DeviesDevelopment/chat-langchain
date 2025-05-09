@@ -39,6 +39,8 @@ jobs:
 
           # Clone the repository
           cd ~
+          ssh-add -D
+          ssh-add ~/.ssh/id_rsa
           git clone git@github.com:DeviesDevelopment/chat-langchain.git
           cd chat-langchain
           git checkout langserve-openai
