@@ -42,6 +42,10 @@ jobs:
         username: ${{ secrets.VM_USERNAME }}
         key: ${{ secrets.VM_SSH_KEY }}
         script: |
+          # Add user to docker group and ensure permissions are set
+          sudo usermod -aG docker $USER
+          sudo chmod 666 /var/run/docker.sock
+          
           # Login to Azure Container Registry
           echo ${{ secrets.DEVIES_PR_ACR_PASSWORD }} | docker login deviesprbot.azurecr.io -u ${{ secrets.DEVIES_PR_ACR_USERNAME }} --password-stdin
           
