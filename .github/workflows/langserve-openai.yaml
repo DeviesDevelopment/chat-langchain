@@ -1,4 +1,4 @@
-name: Deploy Backend to Azure Container Apps
+name: Deploy Backend to Azure VM
 
 on:
   push:
@@ -35,16 +35,56 @@ jobs:
         docker build -t deviesprbot.azurecr.io/deviesprbot:${{ github.sha }} .
         docker push deviesprbot.azurecr.io/deviesprbot:${{ github.sha }}
 
-    - name: Deploy to Azure Container Apps
-      uses: azure/container-apps-deploy-action@v2
+    - name: Deploy to VM
+      uses: appleboy/ssh-action@master
       with:
-        appSourcePath: .
-        registryUrl: deviesprbot.azurecr.io
-        registryUsername: ${{ secrets.DEVIES_PR_ACR_USERNAME }}
-        registryPassword: ${{ secrets.DEVIES_PR_ACR_PASSWORD }}
-        containerAppName: deviesprbot
-        resourceGroup: DeviesBlogGPT
-        imageToDeploy: deviesprbot.azurecr.io/deviesprbot:${{ github.sha }}
+        host: ${{ secrets.VM_HOST }}
+        username: ${{ secrets.VM_USERNAME }}
+        key: ${{ secrets.VM_SSH_KEY }}
+        script: |
+          # Login to Azure Container Registry
+          echo ${{ secrets.DEVIES_PR_ACR_PASSWORD }} | docker login deviesprbot.azurecr.io -u ${{ secrets.DEVIES_PR_ACR_USERNAME }} --password-stdin
+          
+          # Pull the latest image
+          docker pull deviesprbot.azurecr.io/pgvector
+          docker pull deviesprbot.azurecr.io/deviesprbot:${{ github.sha }}
+          
+          # Stop and remove the existing container if it exists
+          docker stop pgvector-container || true
+          docker rm pgvector-container || true
+          docker stop deviesprbot || true
+          docker rm deviesprbot || true
+          
+          # Create Docker network if it doesn't exist
+          docker network create langchain-network || true
+
+          # Run the pgvector with the network
+          docker run -d \
+            --name pgvector-container \
+            --network langchain-network \
+            --restart unless-stopped \
+            -p 6024:5432 \
+            -e POSTGRES_USER="${{ secrets.POSTGRES_USER }}" \
+            -e POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
+            -e POSTGRES_DB=langchain \
+            deviesprbot.azurecr.io/pgvector
+          
+          # Run the new container with environment variables and network
+          docker run -d \
+            --name deviesprbot \
+            --network langchain-network \
+            --restart unless-stopped \
+            -p 8080:8080 \
+            -e OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+            -e POSTGRES_DB_CONN="${{ secrets.POSTGRES_DB_CONN }}" \
+            -e DB_INDEX_NAME="${{ secrets.DB_INDEX_NAME }}" \
+            -e USER_AGENT="${{ secrets.USER_AGENT }}" \
+            -e AZURE_BLOB_CONN="${{ secrets.AZURE_BLOB_CONN }}" \
+            -e AZURE_BLOB_CONTAINER="${{ secrets.AZURE_BLOB_CONTAINER }}" \
+            -e MPLCONFIGDIR="${{ secrets.MPLCONFIGDIR }}" \
+            -e NLTK_DATA="${{ secrets.NLTK_DATA }}" \
+            -e XDG_CACHE_HOME="${{ secrets.XDG_CACHE_HOME }}" \
+            deviesprbot.azurecr.io/deviesprbot:${{ github.sha }}
 
 
 
