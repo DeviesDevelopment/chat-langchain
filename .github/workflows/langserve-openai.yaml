@@ -23,18 +23,6 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    - name: Login to Azure Container Registry
-      uses: azure/docker-login@v2
-      with:
-        login-server: deviesprbot.azurecr.io
-        username: ${{ secrets.DEVIES_PR_ACR_USERNAME }}
-        password: ${{ secrets.DEVIES_PR_ACR_PASSWORD }}
-
-    - name: Build and Push Docker Image
-      run: |
-        docker build -t deviesprbot.azurecr.io/deviesprbot:${{ github.sha }} .
-        docker push deviesprbot.azurecr.io/deviesprbot:${{ github.sha }}
-
     - name: Deploy to VM
       uses: appleboy/ssh-action@master
       with:
@@ -46,18 +34,24 @@ jobs:
           sudo usermod -aG docker $USER
           sudo chmod 666 /var/run/docker.sock
           
-          # Login to Azure Container Registry
-          echo ${{ secrets.DEVIES_PR_ACR_PASSWORD }} | docker login deviesprbot.azurecr.io -u ${{ secrets.DEVIES_PR_ACR_USERNAME }} --password-stdin
-          
-          # Pull the latest image
-          docker pull deviesprbot.azurecr.io/pgvector
-          docker pull deviesprbot.azurecr.io/deviesprbot:${{ github.sha }}
-          
+          # Pull the pgvector image
+          docker pull pgvector/pgvector:pg16
+
+          # Clone the repository
+          cd ~
+          git clone git@github.com:DeviesDevelopment/chat-langchain.git
+          cd chat-langchain
+          git checkout langserve-openai
+
           # Stop and remove the existing container if it exists
           docker stop pgvector-container || true
           docker rm pgvector-container || true
           docker stop deviesprbot || true
           docker rm deviesprbot || true
+
+          # Build the Docker image
+          docker rmi -f deviesprbot || true
+          docker build -t deviesprbot .
           
           # Create Docker network if it doesn't exist
           docker network create langchain-network || true
@@ -71,7 +65,7 @@ jobs:
             -e POSTGRES_USER="${{ secrets.POSTGRES_USER }}" \
             -e POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
             -e POSTGRES_DB=langchain \
-            deviesprbot.azurecr.io/pgvector
+            pgvector/pgvector:pg16
           
           # Run the new container with environment variables and network
           docker run -d \
@@ -89,6 +83,9 @@ jobs:
             -e NLTK_DATA="${{ secrets.NLTK_DATA }}" \
             -e XDG_CACHE_HOME="${{ secrets.XDG_CACHE_HOME }}" \
             deviesprbot.azurecr.io/deviesprbot:${{ github.sha }}
+          
+          # Remove the image
+          docker rmi -f deviesprbot || true
 
 
 
