@@ -55,16 +55,12 @@ jobs:
 
           # Build the Docker image
           docker rmi -f deviesprbot || true
-          docker build -t deviesprbot:latest .
+          docker build -t deviesprbot .
           
-          # Create Docker network if it doesn't exist
-          docker network create langchain-network || true
-
           # Run the pgvector with the network
           docker run -d \
             --name pgvector-container \
             --network langchain-network \
-            --restart unless-stopped \
             -p 6024:5432 \
             -e POSTGRES_USER="${{ secrets.POSTGRES_USER }}" \
             -e POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
@@ -75,7 +71,6 @@ jobs:
           docker run -d \
             --name deviesprbot-container \
             --network langchain-network \
-            --restart unless-stopped \
             -p 8080:8080 \
             -e OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
             -e POSTGRES_DB_CONN="${{ secrets.POSTGRES_DB_CONN }}" \
@@ -86,11 +81,8 @@ jobs:
             -e MPLCONFIGDIR="${{ secrets.MPLCONFIGDIR }}" \
             -e NLTK_DATA="${{ secrets.NLTK_DATA }}" \
             -e XDG_CACHE_HOME="${{ secrets.XDG_CACHE_HOME }}" \
-            deviesprbot:latest
+            deviesprbot
           
-          # Remove the image
-          docker rmi -f deviesprbot || true
-
           # Remove the git repo
           rm -rf chat-langchain
 
