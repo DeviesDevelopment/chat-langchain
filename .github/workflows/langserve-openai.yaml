@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - langserve-openai
+  workflow_dispatch:
 
 permissions:
   contents: read
